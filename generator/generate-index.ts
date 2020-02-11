@@ -12,7 +12,7 @@ export * from './api';`;
 
   const definition = [generateHeader(doc), imports].join('\n\n') + '\n';
 
-  writeOutFile(filename, definition);
+  writeOutFile(filename.toLowerCase(), definition);
 }
 
 export function generateSuperIndex(tags: string[], doc: OpenAPIObject) {
@@ -24,5 +24,5 @@ export function generateSuperIndex(tags: string[], doc: OpenAPIObject) {
 
   const definition = [generateHeader(doc), imports, exportStatements].join('\n\n') + '\n';
 
-  writeOutFile(filename, definition);
+  writeOutFile(filename.toLowerCase(), definition);
 }

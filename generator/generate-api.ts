@@ -62,6 +62,10 @@ function generatePathDefinition(path: string, pathDef: PathItemObject, doc: Open
         if (!param.required) {
           return `${p}: params.${p} ? params.${p}.join(',') : undefined`;
         }
+
+        if (!param.required && (paramType !== 'boolean')) {
+          return `${p}: params.${p} ? params.${p} : undefined`;
+        }
         return `${p}: params.${p}.join(',')`;
       }
 
