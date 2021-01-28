@@ -1,5 +1,5 @@
 import { SchemaObject, ReferenceObject, OpenAPIObject, RequestBodyObject } from 'openapi3-ts';
-import * as _ from 'underscore';
+import _ from 'underscore';
 
 export interface DefInfo {
   def: string;
@@ -8,7 +8,10 @@ export interface DefInfo {
   interfaceName: string;
 }
 
-export function resolveSchemaType(schema: SchemaObject | ReferenceObject, doc: OpenAPIObject): string {
+export function resolveSchemaType(
+  schema: SchemaObject | ReferenceObject,
+  doc: OpenAPIObject
+): string {
   if (isReferenceObject(schema)) {
     return interfaceName(schema.$ref, doc);
   } else if (schema['x-enum-reference']) {
@@ -20,22 +23,26 @@ export function resolveSchemaType(schema: SchemaObject | ReferenceObject, doc: O
 
 export function typeMapping(schema: SchemaObject, doc: OpenAPIObject): string {
   switch (schema.type) {
-    case "string":
+    case 'string':
       return schema.format === 'byte' ? 'number' : 'string';
-    case "integer":
+    case 'integer':
       // JS can't represent a 64-bit int as a number, so bungie.net returns it as a string in JSON
       return schema.format === 'int64' ? 'string' : 'number';
 
-    case "array":
+    case 'array':
       return resolveSchemaType(schema.items!, doc) + '[]';
-    case "object":
+    case 'object':
       if (schema.allOf) {
         return resolveSchemaType(schema.allOf[0], doc);
-      } else if (schema.additionalProperties && schema['x-dictionary-key']) {
+      } else if (
+        schema.additionalProperties &&
+        schema['x-dictionary-key'] &&
+        typeof schema.additionalProperties !== 'boolean'
+      ) {
         const keySchema: SchemaObject | ReferenceObject = schema['x-dictionary-key'];
         const key = isReferenceObject(keySchema) ? 'number' : resolveSchemaType(keySchema, doc);
         const val = resolveSchemaType(schema.additionalProperties, doc);
-        const keyExp = (key === 'number' || key === 'string') ? `key: ${key}` : `key in ${key}`;
+        const keyExp = key === 'number' || key === 'string' ? `key: ${key}` : `key in ${key}`;
         return `{ [${keyExp}]: ${val} }`;
       }
   }
@@ -52,7 +59,7 @@ export function getReferencedTypes(schema: SchemaObject | ReferenceObject): stri
     return getReferencedTypes(schema.items!);
   } else if (schema.allOf) {
     return getReferencedTypes(schema.allOf[0]);
-  } else if (schema.additionalProperties) {
+  } else if (schema.additionalProperties && typeof schema.additionalProperties !== 'boolean') {
     return getReferencedTypes(schema.additionalProperties);
   }
 }
@@ -111,10 +118,14 @@ export function interfaceName(componentPath: string, doc: OpenAPIObject) {
   return name;
 }
 
-export function isRequestBodyObject(requestBody: RequestBodyObject | ReferenceObject): requestBody is RequestBodyObject {
+export function isRequestBodyObject(
+  requestBody: RequestBodyObject | ReferenceObject
+): requestBody is RequestBodyObject {
   return (requestBody as RequestBodyObject).content !== undefined;
 }
 
-export function isReferenceObject(schema: SchemaObject | ReferenceObject): schema is ReferenceObject {
+export function isReferenceObject(
+  schema: SchemaObject | ReferenceObject
+): schema is ReferenceObject {
   return (schema as ReferenceObject).$ref !== undefined;
 }

@@ -3,38 +3,52 @@
  * in DIM, but is free for anyone to use.
  */
 
-import * as fs from 'fs';
-import * as _ from 'underscore';
+import fs from 'fs';
+import _ from 'underscore';
 import { OpenAPIObject, PathItemObject } from 'openapi3-ts';
-import { DefInfo } from './util';
-import { generateServiceDefinition } from './generate-api';
-import { generateInterfaceDefinitions } from './generate-interfaces';
-import { computeTypeMaps } from './type-index';
-import { generateIndex, generateSuperIndex } from './generate-index';
+import { generateIndex, generateSuperIndex } from './generate-index.js';
 
-const doc = JSON.parse(fs.readFileSync('api-src/openapi.json').toString()) as OpenAPIObject;
+import { DefInfo } from './util.js';
+import { computeTypeMaps } from './type-index.js';
+import { generateInterfaceDefinitions } from './generate-interfaces.js';
+import { generateManifestUtils } from './generate-manifest.js';
+import { generateServiceDefinition } from './generate-api.js';
+import { generatePackageJson } from './generate-package-json.js';
 
-const pathPairs = _.pairs(doc.paths) as [string, PathItemObject][];
+// allow some async operations
+(async () => {
+  const doc = JSON.parse(fs.readFileSync('api-src/openapi.json').toString()) as OpenAPIObject;
 
-const pathPairsByTag = _.groupBy(pathPairs, ([path, desc]) => {
-  return (desc.get || desc.post)!.tags![0];
-});
-delete pathPairsByTag[''];
+  // Pairs of [request path, path service description]
+  const pathPairs = _.pairs(doc.paths) as [string, PathItemObject][];
 
-const { componentsByFile, componentByDef } = computeTypeMaps(pathPairsByTag, doc);
+  // Grouped by "tag" which says which service (destiny, groups, forums, etc)
+  const pathPairsByTag = _.groupBy(pathPairs, ([path, desc]) => {
+    return (desc.get || desc.post)!.tags![0];
+  });
+  pathPairsByTag['Core'] = pathPairsByTag[''];
+  delete pathPairsByTag[''];
 
-_.each(componentsByFile, (components: DefInfo[], file: string) => {
-  generateInterfaceDefinitions(file, components, doc, componentByDef);
-});
+  const { componentsByFile, componentByDef } = computeTypeMaps(pathPairsByTag, doc);
 
-_.each(pathPairsByTag, (paths, tag) => {
-  generateServiceDefinition(tag, paths, doc, componentByDef);
-});
+  _.each(componentsByFile, (components: DefInfo[], file: string) => {
+    generateInterfaceDefinitions(file, components, doc, componentByDef);
+  });
 
-_.each(pathPairsByTag, (paths, tag) => {
-  generateIndex(tag, doc);
-});
+  await generateManifestUtils(componentsByFile['destiny2/interfaces.ts'], doc);
 
-generateSuperIndex(Object.keys(pathPairsByTag), doc);
+  _.each(pathPairsByTag, (paths, tag) => {
+    generateServiceDefinition(tag, paths, doc, componentByDef);
+  });
 
-// some way to mark "preview" stuff
+  _.each(pathPairsByTag, (paths, tag) => {
+    generateIndex(tag, doc, componentsByFile);
+  });
+
+  generateSuperIndex(Object.keys(pathPairsByTag), doc);
+
+  // read top package.json, remove dependencies, add exports block per service
+  generatePackageJson(Object.keys(pathPairsByTag));
+
+  // some way to mark "preview" stuff
+})();

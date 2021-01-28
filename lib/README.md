@@ -6,12 +6,12 @@ This project implements TypeScript definitions and API helpers for the [Bungie.n
 
 Feel free to fork this and use it to generate for your favorite language!
 
-* [Dart](https://github.com/marquesinijatinha/bungie-api-dart/)
+- [Dart](https://github.com/marquesinijatinha/bungie-api-dart/)
 
 # Install
 
 ```
-npm install bungie-api-ts
+yarn add bungie-api-ts
 ```
 
 # Interfaces and Enums
@@ -57,8 +57,28 @@ import { Destiny2 } from 'bungie-api-ts';
 Destiny2.getProfile(...);
 ```
 
+# Manifest Helpers
+
+The `destiny2` import also contains helpers for typing and downloading the Destiny manifest:
+
+```typescript
+import { getDestinyManifestSlice } from 'bungie-api-ts/destiny2';
+
+const destinyManifest = await getDestinyManifest($http);
+const manifestTables = getDestinyManifestSlice($http, {
+  destinyManifest,
+  tableNames: ['DestinyInventoryItemDefinition', 'DestinySocketDefinition'];
+  language: 'en';
+});
+
+// manifestTables is an object with properties DestinyInventoryItemDefinition and DestinySocketDefinition
+```
+
 # Build
 
 ```
-npm install && npm start
+# setup
+yarn && yarn submodule
+# run
+yarn start
 ```

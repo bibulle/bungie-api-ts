@@ -1,8 +1,8 @@
-import { DefInfo, getReferencedTypes, getRef } from './util';
-import * as _ from 'underscore';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as mkdirp from 'mkdirp';
+import { DefInfo, getReferencedTypes, getRef } from './util.js';
+import _ from 'underscore';
+import path from 'path';
+import fs from 'fs';
+import mkdirp from 'mkdirp';
 import { OpenAPIObject, SchemaObject, ReferenceObject } from 'openapi3-ts';
 
 export function generateHeader(doc: OpenAPIObject): string {
@@ -23,7 +23,7 @@ export function generateHeader(doc: OpenAPIObject): string {
 export function addImport(
   doc: OpenAPIObject,
   schema: SchemaObject | ReferenceObject,
-  componentByDef: {[def: string]: DefInfo },
+  componentByDef: { [def: string]: DefInfo },
   importFiles: { [filename: string]: Set<string> }
 ) {
   const typeRef = getReferencedTypes(schema);
@@ -47,25 +47,38 @@ export function addImport(
   }
 }
 
-export function generateImports(filename: string , importFiles: { [filename: string]: Set<string> }): string {
-  return _.compact(_.map(importFiles, (types, f) => {
-    const absImport = path.resolve('generated-src', f);
-    const absDest = path.resolve(filename);
-    if (absImport === absDest) {
-      return undefined;
-    }
-    let relativePath = path.relative(path.dirname(absDest), absImport).replace(/(\.d)?\.ts$/, '');
-    if (!relativePath.startsWith('.')) {
-      relativePath = './' + relativePath;
-    }
-    return `import {
+export function generateImports(
+  filename: string,
+  importFiles: { [filename: string]: Set<string> }
+): string {
+  return _.compact(
+    _.map(importFiles, (types, f) => {
+      const absImport = path.resolve('generated-src', f);
+      const absDest = path.resolve(filename);
+      if (absImport === absDest) {
+        return undefined;
+      }
+      let relativePath = path.relative(path.dirname(absDest), absImport).replace(/(\.d)?\.ts$/, '');
+      if (!relativePath.startsWith('.')) {
+        relativePath = './' + relativePath;
+      }
+      if (path.sep === '\\') relativePath = relativePath.replace(/\\/g, '/');
+      return `import {
   ${[...types].sort().join(',\n  ')}
-} from '${relativePath}';`;
-  })).sort().join("\n");
+} from '${relativePath}.js';`;
+    })
+  )
+    .sort()
+    .join('\n');
 }
 
 export function docComment(text: string) {
-  const lines = _.flatten(text.trim().split('\n').map((l) => l.replace(/(.{1,80}(?:\W|$))/g, '$1\n').split('\n'))).map((s: string) => s.trim());
+  const lines = _.flatten(
+    text
+      .trim()
+      .split('\n')
+      .map((l) => l.replace(/(.{1,80}(?:\W|$))/g, '$1\n').split('\n'))
+  ).map((s: string) => s.trim());
   lines.pop();
 
   if (lines.length === 1) {
@@ -73,7 +86,7 @@ export function docComment(text: string) {
   }
 
   return `/**
-${lines.map((line) => line.length ? ' * ' + line : ' *').join('\n')}
+${lines.map((line) => (line.length ? ' * ' + line : ' *')).join('\n')}
  */`;
 }
 
@@ -82,14 +95,14 @@ export function indent(text: string, indentLevel: number) {
   return lines.map((line) => '  '.repeat(indentLevel) + line).join('\n');
 }
 
-export function writeOutFile(filename: string, contents: string) {
-  mkdirp(path.dirname(filename), (err) => {
-    if (err) {
-      console.error(err);
-    } else {
-      fs.writeFile(filename, contents, null, (error) => {
-        console.log(error ? error : `Done with ${filename}!`);
-      });
-    }
-  });
+export async function writeOutFile(filename: string, contents: string) {
+  try {
+    await mkdirp(path.dirname(filename));
+
+    fs.writeFile(filename, contents, null, (error) => {
+      console.log(error ? error : `Done with ${filename}!`);
+    });
+  } catch (e) {
+    console.error(e);
+  }
 }

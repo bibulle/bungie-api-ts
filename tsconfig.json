@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
+    "rootDir": "./generator",
     "outDir": "./build/",
     "sourceMap": true,
     "strictNullChecks": true,
-    "module": "commonjs",
+    "strict": true,
+    "module": "es2015",
     "target": "es2017",
     "moduleResolution": "node",
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowJs": true
   },
-  "include": [
-    "./generator/**/*"
-  ]
+  "include": ["./generator/**/*"]
 }

@@ -3,13 +3,13 @@
     "outDir": "./lib/",
     "sourceMap": false,
     "strictNullChecks": true,
-    "module": "commonjs",
+    "module": "ES2015",
     "target": "es5",
     "moduleResolution": "node",
     "declaration": true,
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "emitDeclarationOnly": true,
+    "esModuleInterop": true
   },
-  "include": [
-    "./generated-src/**/*"
-  ]
+  "include": ["./generated-src/**/*"]
 }
